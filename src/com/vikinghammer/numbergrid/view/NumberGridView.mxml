@@ -1,0 +1,227 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mx:VBox 
+	xmlns:mx="http://www.adobe.com/2006/mxml"
+	backgroundColor="white"
+	initialize="_onInitialize()">
+	
+	<mx:Script>
+		<![CDATA[
+			import mx.containers.GridItem;
+			import mx.containers.GridRow;
+			
+			private static const GRID_SIZE:Number = 10;
+			
+			private var _cells:Array = [];
+			
+			[Bindable]
+			private var _targetValue:Number;
+			
+			[Bindable]
+			private var _points:Number = 0;
+			
+			private var _level:Number = 1;
+			
+			private var _startTime:Date;
+			
+			/**
+			 * When the grid is initialized, we build out all the cells, 
+			 * generate an initial target value, and start the timer.
+			 */
+			private function _onInitialize():void {
+				_generateTargetNumber();
+				
+				for (var i:int=0; i < GRID_SIZE; i++) {
+					_cells.push([]);
+					var gridRow:GridRow = new GridRow();
+					grid.addChild(gridRow);
+					
+					for (var j:int=0; j < GRID_SIZE; j++) {
+						var cell:Cell = new Cell(_randomCellValue);
+						var gridItem:GridItem = new GridItem();
+						gridItem.addChild(cell);
+						gridRow.addChild(gridItem);
+						
+						_cells[i][j] = cell;
+						
+						cell.addEventListener(MouseEvent.CLICK, _cellClickHandler);
+					}
+				}
+				
+				_resetTimer();
+			}
+			
+			/**
+			 * Reset the timer to the current date.
+			 */
+			private function _resetTimer():void {
+				_startTime = new Date();
+			}
+			
+			/**
+			 * Generate a new target value.
+			 * Something between 5 times the current target and 10 times the current level.
+			 */
+			private function _generateTargetNumber():void {
+				var minTarget:Number = 5 * _level;
+				var maxTarget:Number = 10 * _level;
+				var random:Number = Math.random();
+				var target:Number = Math.round(random * (maxTarget - minTarget)) + minTarget;
+				_targetValue = target;
+			}
+			
+			/**
+			 * Generate a value for a cell.
+			 * Make sure it's between 1 and the current target.
+			 */
+			private function get _randomCellValue():Number {
+				var random:Number = Math.random();
+				var value:Number = Math.round(random * (_targetValue - 1)) + 1;
+				return value;
+			}
+			
+			/**
+			 * Each time they click a cell, we check if they've met the target
+			 * and if so, update the points, and reset the selection.
+			 */
+			private function _cellClickHandler(event:Event):void {
+				// get the sum of the selected cells
+				var sum:Number = _sumSelection;
+				
+				// check if the target has been met
+				if (sum == _targetValue) {
+					// add points to the total based on the selection
+					_points += _calculatePoints();
+					
+					// check if they can level up
+					if (_canLevelUp) {
+						_level += 1;
+						
+						_generateTargetNumber();
+					}
+					
+					// reset the start time
+					_resetTimer();
+					
+					// generate new numbers for each of the cells
+					var cells:Array = _selectedCells;
+					for each (var cell:Cell in cells) {
+						cell.number = _randomCellValue;
+						cell.selected = false;
+					}
+				}
+			}
+			
+			/**
+			 * Calculate the points that the current selection is worth.
+			 * Based on the size of the selection and the time it took to reach the target.
+			 * Ideally, the length is more valuable than the time -- we just want to disincentivize 
+			 * them from taking too long to construct a really long one. So if they take 10 seconds,
+			 * they barely get any points. If it takes under 1 second, their points triple. Under 2,
+			 * and it doubles. Under 5, they get 1.5x points. Between 5 and 10, 1x points.
+			 */
+			private function _calculatePoints():Number {
+				var currentTime:Date = new Date();
+				var cells:Array = _selectedCells;
+				
+				var seconds:Number = ((currentTime.getTime() - _startTime.getTime()) / 1000);
+				
+				var points:Number = (cells.length * _level * 5);
+				
+				points += _targetValue;
+				
+				if (seconds < 1) {
+					points *= 3;
+				} else if (seconds < 2) {
+					points *= 2;
+				} else if (seconds < 5) {
+					points *= 1.5;
+				} else if (seconds > 10) {
+					points *= 0.33;
+				}
+				
+				points = Math.round(points);
+				
+				return points;
+			}
+			
+			/**
+			 * Get the sum of the values of the currently selected
+			 * cells.
+			 */
+			private function get _sumSelection():Number {
+				var sum:Number = 0;
+				
+				var cells:Array = _selectedCells;
+				
+				for each (var cell:Cell in cells) {
+					sum += cell.number;
+				}
+				
+				return sum;
+			}
+			
+			/**
+			 * Check their points, and determine whether they're ready to level up.
+			 */
+			private function get _canLevelUp():Boolean {
+				if (_level == 1) {
+					return (_points > 500);
+				} else if (_level == 2) {
+					return (_points > 2500);
+				} else {
+					return false;
+				}
+			}
+			
+			/**
+			 * Get an array of the currently selected cells.
+			 */
+			private function get _selectedCells():Array {
+				var cells:Array = [];
+				for (var i:int=0; i < GRID_SIZE; i++) {
+					for (var j:int=0; j < GRID_SIZE; j++) {
+						var cell:Cell = _cells[i][j];
+						if (cell.selected) {
+							cells.push(cell);
+						}
+					}
+				}
+				
+				return cells;
+			}
+			
+			/**
+			 * When they click the clear button, we de-select all the cells
+			 * and reset the timer.
+			 */
+			private function _clearClickHandler(event:Event):void {
+				var cells:Array = _selectedCells;
+				
+				for each (var cell:Cell in cells) {
+					cell.selected = false;
+				}
+				
+				_startTime = new Date();
+			}
+		]]>
+	</mx:Script>
+	
+	<mx:HBox width="100%">
+		<mx:Label fontSize="14" text="Target: {_targetValue}" />
+		<mx:Spacer width="100%" />
+		<mx:Label fontSize="14" text="Points: {_points}" />
+	</mx:HBox>
+	
+	<mx:HBox width="100%">
+		<mx:Spacer width="100%" />
+		<mx:Grid id="grid" />
+		<mx:Spacer width="100%" />
+	</mx:HBox>
+	
+	<mx:HBox width="100%">
+		<mx:Spacer width="100%" />
+		<mx:Button label="Clear" click="_clearClickHandler(event)" />
+		<mx:Spacer width="100%" />
+	</mx:HBox>
+	
+</mx:VBox>
