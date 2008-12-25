@@ -9,7 +9,26 @@
 			import mx.containers.GridItem;
 			import mx.containers.GridRow;
 			
-			private static const GRID_SIZE:Number = 5;
+			private static const GRID_SIZE:Number = 4;
+			
+			/**
+			 * Define the number of points required to graduate
+			 * from each level.
+			 * Each index holds the points required to graduate from
+			 * that level.
+			 * For example, to graduate from level 1, you need to have
+			 * at least the number of points in LEVELS[1].
+			 */
+			private static const LEVELS:Array = [
+				0,
+				200,
+				600,
+				1000,
+				1500,
+				2500,
+				3800,
+				5500,
+			];
 			
 			private var _cells:Array = [];
 			
@@ -58,12 +77,11 @@
 			}
 			
 			/**
-			 * Generate a new target value.
-			 * Something between 5 times the current target and 10 times the current level.
+			 * Generate a new target value based on the current level.
 			 */
 			private function _generateTargetNumber():void {
-				var minTarget:Number = 5 * _level;
-				var maxTarget:Number = 10 * _level;
+				var minTarget:Number = 2 * _level;
+				var maxTarget:Number = 6 * _level;
 				var random:Number = Math.random();
 				var target:Number = Math.round(random * (maxTarget - minTarget)) + minTarget;
 				_targetValue = target;
@@ -162,15 +180,12 @@
 			
 			/**
 			 * Check their points, and determine whether they're ready to level up.
+			 * The LEVELS array holds the number of points required to graduate from
+			 * each level. For example, if you're currently in level 1, you need the
+			 * number of points in LEVELS[1] in order to graduate to level 2.
 			 */
 			private function get _canLevelUp():Boolean {
-				if (_level == 1) {
-					return (_points > 500);
-				} else if (_level == 2) {
-					return (_points > 2500);
-				} else {
-					return false;
-				}
+				return (_points > LEVELS[_level]);
 			}
 			
 			/**
@@ -188,6 +203,28 @@
 				}
 				
 				return cells;
+			}
+			
+			/**
+			 * When they click the shuffle button, we change all the values to new
+			 * random numbers and un-select everything.
+			 * We also decrease their points, to discourage people from doing this,
+			 * and to punish them for not thinking ahead before getting stuck.
+			 */
+			private function _shuffleClickHandler(event:Event):void {
+				// loop through every cell, generating new values and making them un-selected
+				for (var i:int=0; i < GRID_SIZE; i++) {
+					for (var j:int=0; j < GRID_SIZE; j++) {
+						_cells[i][j].selected = false;
+						_cells[i][j].number = _randomCellValue;
+					}
+				}
+				
+				// reset the timer
+				_resetTimer();
+				
+				// reduce their points by 10%
+				_points = Math.round(_points * 0.9);
 			}
 			
 			/**
@@ -220,6 +257,7 @@
 	
 	<mx:HBox width="100%">
 		<mx:Spacer width="100%" />
+		<mx:Button label="Shuffle" click="_shuffleClickHandler(event)" />
 		<mx:Button label="Clear" click="_clearClickHandler(event)" />
 		<mx:Spacer width="100%" />
 	</mx:HBox>
