@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <mx:Application xmlns:mx="http://www.adobe.com/2006/mxml" layout="absolute" xmlns:view="com.vikinghammer.numbergrid.view.*">
 
-	<view:NumberGridView />	
+	<mx:HBox width="100%" paddingTop="10">
+		<mx:Spacer width="100%" />
+		<view:NumberGridView paddingBottom="10" paddingLeft="10" paddingRight="10" paddingTop="10" />
+		<mx:Spacer width="100%" />
+	</mx:HBox>
+		
 </mx:Application>

@@ -9,7 +9,7 @@
 			import mx.containers.GridItem;
 			import mx.containers.GridRow;
 			
-			private static const GRID_SIZE:Number = 10;
+			private static const GRID_SIZE:Number = 5;
 			
 			private var _cells:Array = [];
 			
